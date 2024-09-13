@@ -45,6 +45,9 @@ wget https://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt.pem 
 openssl x509 -in DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt.pem -inform PEM -out DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt
 # copy the certificate to the correct folder
 sudo sudo cp DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt /usr/share/ca-certificates/extra/
+# reconfigure the certificates
+# when prompted, select the new cert
+sudo dpkg-reconfigure ca-certificates
 # restart the zabbix-agent2 service
 sudo service zabbix-agent2 restart
 # do the check
