@@ -192,7 +192,7 @@ else {
     # Version Pattern
     $Pattern = '\d+\.\d+\.\d+'
     # get latest version
-    $agentVersion = (($HTML | Select-String $Pattern -AllMatches).Matches | Select-Object -Unique | Select-Object -Last 1).value
+    $agentVersion = (($HTML | Select-String $Pattern -AllMatches).Matches | Select-Object -Unique value | Sort-Object { $_.value -as [Version] } | Select-Object -Last 1).Value
     $installerLocation = "$baseURL/$agentVersion/zabbix_$agenttype-$agentVersion-windows-amd64-openssl.msi"
     Write-Host "[INFO] Build URL is: $installerLocation" -ForegroundColor Blue
   }
