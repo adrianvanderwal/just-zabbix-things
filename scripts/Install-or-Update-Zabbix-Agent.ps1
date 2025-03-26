@@ -116,7 +116,7 @@ if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.Wi
 # Script Version Check
 Write-Host "[INFO] Checking Script Version" -ForegroundColor Yellow
 try {
-  Write-Host "[INFO] Script version: $localVersion." -ForegroundColor Yellow
+  Write-Host "[INFO] Script version: $localVersion" -ForegroundColor Yellow
 
   # Fetch the remote script content
   $remoteScriptContent = Invoke-WebRequest -Uri $remoteRepositoryURL -UseBasicParsing
