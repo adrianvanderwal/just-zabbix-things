@@ -134,14 +134,14 @@ try {
   }
 }
 catch {
-  Write-Host "[ERRR] Unable to determine remote script version." -ForegroundColor Red
+  Write-Host "[WARN] Unable to determine remote script version." -ForegroundColor DarkYellow
 }
 
 # Check if connection test required
 if ($ForceInstall) {
   # install will be forced without checking
-  Write-Host "[WARN] The ForceInstall Parameter was set, connection the Zabbix Server/Proxy was not tested" -ForegroundColor Yellow
-  Write-Host "[WARN] This may result in a broken installation" -ForegroundColor Yellow
+  Write-Host "[WARN] The ForceInstall Parameter was set, connection the Zabbix Server/Proxy was not tested" -ForegroundColor DarkYellow
+  Write-Host "[WARN] This may result in a broken installation" -ForegroundColor DarkYellow
 }
 else {
   Write-Host "[INFO] A TCP Connection on port $ZabbixServerPort to $ZabbixServer will be attempted to establish connectivity to the Zabbix Server/Proxy before continuing" -ForegroundColor Yellow
@@ -236,7 +236,7 @@ else {
 if ($FreshInstall) {
   # get any installed Zabbix Agents
   $installedAgents = Get-Package -Name "Zabbix Agent*" -ErrorAction SilentlyContinue
-  Write-Host "[WARN] The Fresh Installation flag was set, $($installedAgents.count) currently installed version(s) of the Zabbix Agent / Zabbix Agent 2 will be removed before proceeding" -ForegroundColor Yello
+  Write-Host "[WARN] The Fresh Installation flag was set, $($installedAgents.count) currently installed version(s) of the Zabbix Agent / Zabbix Agent 2 will be removed before proceeding" -ForegroundColor DarkYellow
   # Force uninstall all agent versions
   foreach ($agent in $installedAgents) {
     Write-Host "[INFO] Attempting Removal of $($agent.Name) version $($agent.Version)" -ForegroundColor Red
@@ -294,7 +294,7 @@ try {
     }
   }
   catch {
-    Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor Yellow 
+    Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor DarkYellow 
   }
   Write-Host (Stop-Transcript) -ForegroundColor Green
 }
