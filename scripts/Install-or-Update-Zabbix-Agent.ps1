@@ -113,6 +113,10 @@ if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.Wi
   exit 0
 }
 
+# set tls verison
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    
+
 # Script Version Check
 Write-Host "[INFO] Checking Script Version" -ForegroundColor Yellow
 try {
@@ -211,8 +215,6 @@ if ($localMSIPath) {
 }
 else {
   try {
-    # set tls verison
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # base URL for Zabbix CDN
     Write-Host "[INFO] Attempting to build a download URL" -ForegroundColor Yellow
     $baseURL = "https://cdn.zabbix.com/zabbix/binaries/stable/$MajorVersion"
@@ -275,23 +277,18 @@ try {
   Write-Host "[INFO] msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName" -ForegroundColor Blue
   msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName | Out-Default # Out-Default to pause script until installation is completed
   Write-Host "[SUCC] The installation of $agentString $agentVersion was successful" -ForegroundColor Green
-  Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to: $hostName" -ForegroundColor Yellow
+  Write-Host "------"-ForegroundColor Green
+  Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to:" -ForegroundColor Green
+  Write-Host "       $hostName" -ForegroundColor Green
+  Write-Host "------"-ForegroundColor Green
   try {
     $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
     Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to one of the following, please choose an IP Address that is accessible from the Zabbix Proxy $($ZabbixServer) (preferrably the primary IP address): " -ForegroundColor Yellow
+    Write-Host "------" -ForegroundColor Yellow
     foreach ($ip in $hostIPs) {
-      Write-Host $IP.IPAddress -ForegroundColor Yellow
+      Write-Host "       $($IP.IPAddress)" -ForegroundColor Yellow
     }
-
-    if ($hostIPs.Count -eq 1) {
-      # only a single IP, output it
-      Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to: $($hostIPs.IPAddress)" -ForegroundColor Yellow
-    }
-    elseif ($hostIPs -gt 1) {
-      # multiple IP's output table
-      Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to the primary address from the table below:" -ForegroundColor Yellow
-      $hostIPs | Format-Table -AutoSize
-    }
+    Write-Host "------" -ForegroundColor Yellow
   }
   catch {
     Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor DarkYellow 
