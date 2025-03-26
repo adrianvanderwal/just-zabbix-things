@@ -278,6 +278,11 @@ try {
   Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to: $hostName" -ForegroundColor Yellow
   try {
     $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
+    Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to one of the following, please choose an IP Address that is accessible from the Zabbix Proxy $($ZabbixServer) (preferrably the primary IP address): " -ForegroundColor Yellow
+    foreach ($ip in $hostIPs) {
+      Write-Host $IP.IPAddress -ForegroundColor Yellow
+    }
+
     if ($hostIPs.Count -eq 1) {
       # only a single IP, output it
       Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to: $($hostIPs.IPAddress)" -ForegroundColor Yellow
@@ -289,7 +294,7 @@ try {
     }
   }
   catch {
-    Write-Host "[ERRR] There was an error when attempting to get the local IP Addresses"
+    Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor Yellow 
   }
   Write-Host (Stop-Transcript) -ForegroundColor Green
 }
