@@ -117,8 +117,17 @@ if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.Wi
 Write-Host "[INFO] Checking Script Version" -ForegroundColor Yellow
 try {
   Write-Host "[INFO] Script version: $localVersion." -ForegroundColor Yellow
-  $remoteScript = Invoke-WebRequest -Uri $remoteRepositoryURL
-  $remoteVersion = [System.Version]($remoteScript.Content | Select-String -Pattern '#Version: (\d+\.\d+)').Matches.Groups[1].Value
+
+  # Fetch the remote script content
+  $remoteScriptContent = Invoke-WebRequest -Uri $remoteRepositoryURL -UseBasicParsing
+  # Ensure content is split into lines to avoid entire script capture
+  $remoteScriptLines = $remoteScriptContent.Content -split "`r?`n"
+  # Define a regex pattern to match the version line
+  $versionPattern = '\$localVersion\s*=\s*\[System\.Version\]\s*"?(?<Version>\d+\.\d+\.\d+)"?'
+  # Extract the version using regex matching
+  $remoteVersionString = ($remoteScriptLines | Where-Object { $_ -match $versionPattern }) -replace $versionPattern, '${Version}'
+  $remoteVersion = [System.Version]$remoteVersionString
+
   Write-Host "[INFO] Remote Repository version: $remoteVersion" -ForegroundColor Yellow
   if ($remoteVersion -gt $localVersion) {
     Write-Host "[INFO] A new version ($remoteVersion) is available, please download from it from: $($remoteRepositoryURL)." -ForegroundColor Yellow
