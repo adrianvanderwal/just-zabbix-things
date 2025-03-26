@@ -73,8 +73,13 @@ Param (
   [Parameter(Mandatory = $false)]
   [string]$LogPath = ("c:\temp\"), # LogFile path for the transcript to be written to
   [Parameter (Mandatory = $false)]
-  [int32]$LogsToKeep = 52 # keep last 52 (a years worth if ran every week)
+  [int32]$LogsToKeep = 52, # keep last 52 (a years worth if ran every week)
+  [Parameter(Mandatory = $false)]
+  [string]$remoteRepositoryURL = "https://raw.githubusercontent.com/adrianvanderwal/just-zabbix-things/refs/heads/master/scripts/Install-or-Update-Zabbix-Agent.ps1"
 )
+
+# Local Script Version; for checking if there is an updated script
+$localVersion = [System.Version]"2025.03.26"
 
 # Normalise Log Path
 if ($LogPath[-1] -ne "\") {
@@ -106,6 +111,21 @@ if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.Wi
   Write-Host "[ERRR] This script must be run as Administrator" -ForegroundColor Red
   Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
   exit 0
+}
+
+# Script Version Check
+Write-Host "[INFO] Checking Script Version" -ForegroundColor Yellow
+try {
+  Write-Host "[INFO] Script version: $localVersion." -ForegroundColor Yellow
+  $remoteScript = Invoke-WebRequest -Uri $remoteRepositoryURL
+  $remoteVersion = [System.Version]($remoteScript.Content | Select-String -Pattern '#Version: (\d+\.\d+)').Matches.Groups[1].Value
+  Write-Host "[INFO] Remote Repository version: $remoteVersion" -ForegroundColor Yellow
+  if ($remoteVersion -gt $localVersion) {
+    Write-Host "[INFO] A new version ($remoteVersion) is available, please download from it from: $($remoteRepositoryURL)." -ForegroundColor Yellow
+  }
+}
+catch {
+  Write-Host "[ERRR] Unable to determine remote script version." -ForegroundColor Red
 }
 
 # Check if connection test required
@@ -247,6 +267,21 @@ try {
   msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName | Out-Default # Out-Default to pause script until installation is completed
   Write-Host "[SUCC] The installation of $agentString $agentVersion was successful" -ForegroundColor Green
   Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to: $hostName" -ForegroundColor Yellow
+  try {
+    $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
+    if ($hostIPs.Count -eq 1) {
+      # only a single IP, output it
+      Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to: $($hostIPs.IPAddress)" -ForegroundColor Yellow
+    }
+    elseif ($hostIPs -gt 1) {
+      # multiple IP's output table
+      Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to the primary address from the table below:" -ForegroundColor Yellow
+      $hostIPs | Format-Table -AutoSize
+    }
+  }
+  catch {
+    Write-Host "[ERRR] There was an error when attempting to get the local IP Addresses"
+  }
   Write-Host (Stop-Transcript) -ForegroundColor Green
 }
 catch {
