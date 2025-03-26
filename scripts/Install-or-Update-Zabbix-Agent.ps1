@@ -241,6 +241,8 @@ else {
   }
 }
 
+Write-Host "------" -ForegroundColor Yellow
+Write-Host "[INFO] Checking 'FreshInstall' flag" -ForegroundColor Yellow
 if ($FreshInstall) {
   # get any installed Zabbix Agents
   $installedAgents = Get-Package -Name "Zabbix Agent*" -ErrorAction SilentlyContinue
@@ -254,6 +256,8 @@ if ($FreshInstall) {
     Write-Host "[SUCC] Removing $($agent.Name) version $($agent.Version) was successful" -ForegroundColor Green
   }
 }
+Write-Host "------" -ForegroundColor Yellow
+Write-Host "[INFO] Checking for already installed agents" -ForegroundColor Yellow
 $installedAgents = Get-Package -Name "Zabbix Agent*" -ErrorAction SilentlyContinue
 if ($installedAgents.count -gt 1) {
   Write-Host "[ERRR] Too many agents installed, please manually review" -ForegroundColor Red
@@ -277,21 +281,19 @@ elseif ($installedAgents.count -eq 1) {
   }
 }
 # if script makes it here, either 0 agents are installed, or the agent installed can be upgraded
-
-Write-Host "[INFO] The following Zabbix Agent will attempt to be installed: $agentString $agentVersion" -ForegroundColor Green
 try {
   # actually do the install!
-  Write-Host "------" -ForegroundColor Yellow
+  Write-Host "[INFO] The following Zabbix Agent will be installed: $agentString $agentVersion" -ForegroundColor Yellow
   Write-Host "[INFO] Attempting to run the following command:" -ForegroundColor Yellow
   Write-Host "       msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName" -ForegroundColor Yellow
   msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName | Out-Default # Out-Default to pause script until installation is completed
   Write-Host "[SUCC] The installation of $agentString $agentVersion was successful" -ForegroundColor Green
-  Write-Host "------"-ForegroundColor Green
+  Write-Host "------"-ForegroundColor Yellow
   Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to:" -ForegroundColor Yellow
   Write-Host "       $hostName" -ForegroundColor Yellow
-  Write-Host "------"-ForegroundColor Yellow
   try {
     $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
+    Write-Host "------" -ForegroundColor Yellow
     Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to one of the following, please choose an IP Address that is accessible from the Zabbix Proxy $($ZabbixServer) (preferrably the primary IP address): " -ForegroundColor Yellow
     Write-Host "------" -ForegroundColor Yellow
     foreach ($ip in $hostIPs) {
