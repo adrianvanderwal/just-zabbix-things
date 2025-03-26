@@ -90,11 +90,11 @@ if (-not (Test-Path $LogPath)) {
   New-Item -ItemType Directory -Force -Path $LogPath
 }
 
-Write-Host (Start-Transcript -Path ($LogPath + "Zabbix Agent Installer - " + (get-date -format "yyyyMMdd-hhmmss") + '.log')) -ForegroundColor Green
-
+Write-Host "[INFO]"(Start-Transcript -Path ($LogPath + "Zabbix Agent Installer - " + (get-date -format "yyyyMMdd-hhmmss") + '.log')) -ForegroundColor Yellow
 # Clear old log files, 
 $oldLogs = Get-ChildItem ($logPath + "Zabbix Agent Installer - *.log")
 if (($oldLogs).Count -ge $LogsToKeep ) {
+  Write-Host "------" -ForegroundColor Yellow
   Write-Host "[INFO] Removing old log files:"
   $logstoRemove = $oldLogs | Sort-Object Name | Select-Object Name -First (($oldLogs).Count - $LogsToKeep)
   $logstoRemove | ForEach-Object { Write-Host "[INFO] $($_.Name)" ; Remove-Item $LogPath$($_.Name) -ErrorAction SilentlyContinue }
@@ -102,12 +102,14 @@ if (($oldLogs).Count -ge $LogsToKeep ) {
 
 # Check PowerShell Version
 if ($PSVersionTable.PSVersion.Major -ne 5) {
+  Write-Host "------" -ForegroundColor Red
   Write-Host "[ERRR] This script must be run in PowerShell Version 5." -ForegroundColor Red
   Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
   exit 0
 }
 # Check Running as Admin
 if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
+  Write-Host "------" -ForegroundColor Red
   Write-Host "[ERRR] This script must be run as Administrator" -ForegroundColor Red
   Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
   exit 0
@@ -115,9 +117,9 @@ if (-not ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.Wi
 
 # set tls verison
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    
 
 # Script Version Check
+Write-Host "------" -ForegroundColor Yellow
 Write-Host "[INFO] Checking Script Version" -ForegroundColor Yellow
 try {
   Write-Host "[INFO] Script version: $localVersion" -ForegroundColor Yellow
@@ -134,7 +136,8 @@ try {
 
   Write-Host "[INFO] Remote Repository version: $remoteVersion" -ForegroundColor Yellow
   if ($remoteVersion -gt $localVersion) {
-    Write-Host "[INFO] A new version ($remoteVersion) is available, please download from it from: $($remoteRepositoryURL)." -ForegroundColor Yellow
+    Write-Host "[INFO] A new version ($remoteVersion) is available, please download from it from:" -ForegroundColor Yellow
+    Write-Host "       $($remoteRepositoryURL)" -ForegroundColor Yellow
   }
 }
 catch {
@@ -144,6 +147,7 @@ catch {
 # Check if connection test required
 if ($ForceInstall) {
   # install will be forced without checking
+  Write-Host "------" -ForegroundColor DarkYellow
   Write-Host "[WARN] The ForceInstall Parameter was set, connection the Zabbix Server/Proxy was not tested" -ForegroundColor DarkYellow
   Write-Host "[WARN] This may result in a broken installation" -ForegroundColor DarkYellow
 }
@@ -216,6 +220,7 @@ if ($localMSIPath) {
 else {
   try {
     # base URL for Zabbix CDN
+    Write-Host "------" -ForegroundColor Yellow
     Write-Host "[INFO] Attempting to build a download URL" -ForegroundColor Yellow
     $baseURL = "https://cdn.zabbix.com/zabbix/binaries/stable/$MajorVersion"
     # get content of the zabbix cdn page
@@ -225,7 +230,8 @@ else {
     # get latest version
     $agentVersion = (($HTML | Select-String $Pattern -AllMatches).Matches | Select-Object -Unique value | Sort-Object { $_.value -as [Version] } | Select-Object -Last 1).Value
     $installerLocation = "$baseURL/$agentVersion/zabbix_$agenttype-$agentVersion-windows-amd64-openssl.msi"
-    Write-Host "[INFO] Build URL is: $installerLocation" -ForegroundColor Blue
+    Write-Host "[INFO] Build URL is:" -ForegroundColor Yellow
+    Write-Host "       $installerLocation" -ForegroundColor Yellow
   }
   catch {
     Write-Host "[ERRR] There was an error when attempting to access the Zabbix CDN" -ForegroundColor Red
@@ -238,11 +244,12 @@ else {
 if ($FreshInstall) {
   # get any installed Zabbix Agents
   $installedAgents = Get-Package -Name "Zabbix Agent*" -ErrorAction SilentlyContinue
+  Write-Host "------" -ForegroundColor DarkYellow
   Write-Host "[WARN] The Fresh Installation flag was set, $($installedAgents.count) currently installed version(s) of the Zabbix Agent / Zabbix Agent 2 will be removed before proceeding" -ForegroundColor DarkYellow
   # Force uninstall all agent versions
   foreach ($agent in $installedAgents) {
     Write-Host "[INFO] Attempting Removal of $($agent.Name) version $($agent.Version)" -ForegroundColor Red
-    Write-Host "[INFO] MsiExec.exe /x $($agent.FastPackageReference) /qn /norestart" -ForegroundColor Blue
+    Write-Host "[INFO] MsiExec.exe /x $($agent.FastPackageReference) /qn /norestart" -ForegroundColor Yellow
     MsiExec.exe /x $agent.FastPackageReference /qn /norestart | Out-Default # Piped to Out-Default to ensure script waits for completion
     Write-Host "[SUCC] Removing $($agent.Name) version $($agent.Version) was successful" -ForegroundColor Green
   }
@@ -274,13 +281,15 @@ elseif ($installedAgents.count -eq 1) {
 Write-Host "[INFO] The following Zabbix Agent will attempt to be installed: $agentString $agentVersion" -ForegroundColor Green
 try {
   # actually do the install!
-  Write-Host "[INFO] msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName" -ForegroundColor Blue
+  Write-Host "------" -ForegroundColor Yellow
+  Write-Host "[INFO] Attempting to run the following command:" -ForegroundColor Yellow
+  Write-Host "       msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName" -ForegroundColor Yellow
   msiexec /i $installerLocation /qn SERVER=$ZabbixServer SERVERACTIVE=$ZabbixServer HOSTNAME=$hostName | Out-Default # Out-Default to pause script until installation is completed
   Write-Host "[SUCC] The installation of $agentString $agentVersion was successful" -ForegroundColor Green
   Write-Host "------"-ForegroundColor Green
-  Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to:" -ForegroundColor Green
-  Write-Host "       $hostName" -ForegroundColor Green
-  Write-Host "------"-ForegroundColor Green
+  Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to:" -ForegroundColor Yellow
+  Write-Host "       $hostName" -ForegroundColor Yellow
+  Write-Host "------"-ForegroundColor Yellow
   try {
     $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
     Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to one of the following, please choose an IP Address that is accessible from the Zabbix Proxy $($ZabbixServer) (preferrably the primary IP address): " -ForegroundColor Yellow
@@ -293,7 +302,7 @@ try {
   catch {
     Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor DarkYellow 
   }
-  Write-Host (Stop-Transcript) -ForegroundColor Green
+  Write-Host "[INFO]"(Stop-Transcript) -ForegroundColor Green
 }
 catch {
   Write-Host "[ERRR] There was an issue installing the Zabbix Agent" -ForegroundColor Red
