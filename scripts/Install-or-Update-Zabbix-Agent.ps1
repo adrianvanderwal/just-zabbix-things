@@ -79,7 +79,7 @@ Param (
 )
 
 # Local Script Version; for checking if there is an updated script
-$localVersion = [System.Version]"2025.03.26"
+$localVersion = [System.Version]"2025.04.23"
 
 # Normalise Log Path
 if ($LogPath[-1] -ne "\") {
@@ -177,7 +177,7 @@ $agentVersion = $MajorVersion
 
 if ($localMSIPath) {
   # check if LocalMSI matches the installer pattern
-  if (($localMSIPath | Select-String -Pattern "zabbix_(agent|agent2)-\d\.\d\.\d-windows-amd64-openssl\.msi").Matches.Success) {
+  if ($localMSIPath -match "zabbix_(agent|agent2)-\d+\.\d+\.\d+-windows-amd64-openssl\.msi$") {
     # test the path first, if it doesn't exist, error out
     if (Test-Path $localMSIPath) {
       # path exists, get details from msi
@@ -211,7 +211,7 @@ if ($localMSIPath) {
   else {
     # installer does not exist or is not accessible; write error and end
     Write-Host "[ERRR] The MSI file does not match the installer pattern " -ForegroundColor Red
-    Write-Host "[ERRR] zabbix_(agent|agent2)-\d\.\d\.\d-windows-amd64-openssl\.msi" -ForegroundColor Red
+    Write-Host "[ERRR] zabbix_(agent|agent2)-\d+\.\d+\.\d+-windows-amd64-openssl\.msi$" -ForegroundColor Red
     Write-Host "[ERRR] $localMSIPath" -ForegroundColor Red
     Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
     exit 0
