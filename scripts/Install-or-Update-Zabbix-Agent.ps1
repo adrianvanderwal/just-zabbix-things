@@ -5,7 +5,7 @@
   The script is designed to be run as part of a scheduled task through Group Policy
 .DESCRIPTION
   Comprehensive script that automates the installation and upgrade of the Zabbix Agent (or Zabbix Agent2)
-  
+
   1. Checks for proper PowerShell Version - must run in V5, else some cmdlets don't work/aren't available
   2. Checks for Administrator access - else the msi removal/install doesn't work
   3. Creates a log file for historical purposes (Parameters to set number of log files to keep - default is 52, on the assumption that the script will be run by GPO once a week); automatically rotates said logs
@@ -91,7 +91,7 @@ if (-not (Test-Path $LogPath)) {
 }
 
 Write-Host "[INFO]"(Start-Transcript -Path ($LogPath + "Zabbix Agent Installer - " + (get-date -format "yyyyMMdd-hhmmss") + '.log')) -ForegroundColor Yellow
-# Clear old log files, 
+# Clear old log files,
 $oldLogs = Get-ChildItem ($logPath + "Zabbix Agent Installer - *.log")
 if (($oldLogs).Count -ge $LogsToKeep ) {
   Write-Host "------" -ForegroundColor Yellow
@@ -222,14 +222,17 @@ else {
     # base URL for Zabbix CDN
     Write-Host "------" -ForegroundColor Yellow
     Write-Host "[INFO] Attempting to build a download URL" -ForegroundColor Yellow
-    $baseURL = "https://cdn.zabbix.com/zabbix/binaries/stable/$MajorVersion"
+    $installerLocation = "https://cdn.zabbix.com/zabbix/binaries/stable/$MajorVersion/latest/zabbix_$agenttype-$MajorVersion-latest-windows-amd64-openssl.msi"
+
+    ### due to the fact that the Zabbix Agent
     # get content of the zabbix cdn page
-    $HTML = Invoke-RestMethod $baseURL
+    # $HTML = Invoke-RestMethod $baseURL
     # Version Pattern
-    $Pattern = '\d+\.\d+\.\d+'
+    # $Pattern = '\d+\.\d+\.\d+'
     # get latest version
-    $agentVersion = (($HTML | Select-String $Pattern -AllMatches).Matches | Select-Object -Unique value | Sort-Object { $_.value -as [Version] } | Select-Object -Last 1).Value
-    $installerLocation = "$baseURL/$agentVersion/zabbix_$agenttype-$agentVersion-windows-amd64-openssl.msi"
+    # $agentVersion = (($HTML | Select-String $Pattern -AllMatches).Matches | Select-Object -Unique value | Sort-Object { $_.value -as [Version] } | Select-Object -Last 1).Value
+    # $installerLocation = "$baseURL/$agentVersion/zabbix_$agenttype-$agentVersion-windows-amd64-openssl.msi"
+
     Write-Host "[INFO] Build URL is:" -ForegroundColor Yellow
     Write-Host "       $installerLocation" -ForegroundColor Yellow
   }
@@ -266,19 +269,19 @@ if ($installedAgents.count -gt 1) {
 }
 elseif ($installedAgents.count -eq 1) {
   # check if the currently installed agent is the same type and a version is below the one to install
-  foreach ($agent in $installedAgents) {
-    Write-Host "[INFO] Checking if installed agent: $($agent.Name) version $($agent.Version) can be upgraded to $agentVersion" -ForegroundColor Yellow
-    if ($agent.Name -ne $agentString) {
-      Write-Host "[ERRR] The installed agent ($($agent.Name)) cannot be upgraded" -ForegroundColor Red
-      Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
-      exit 0
-    }
-    if (-not (([System.Version]$agent.version) -le ([System.Version]$agentVersion))) {
-      Write-Host "[ERRR] The installed agent version $($agent.version) cannot be upgraded to $agentVersion" -ForegroundColor Red
-      Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
-      exit 0
-    }
-  }
+  #foreach ($agent in $installedAgents) {
+  #  Write-Host "[INFO] Checking if installed agent: $($agent.Name) version $($agent.Version) can be upgraded to $agentVersion" -ForegroundColor Yellow
+  #  if ($agent.Name -ne $agentString) {
+  #    Write-Host "[ERRR] The installed agent ($($agent.Name)) cannot be upgraded" -ForegroundColor Red
+  #    Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
+  #    exit 0
+  #  }
+  #  if (-not (([System.Version]$agent.version) -le ([System.Version]$agentVersion))) {
+  #    Write-Host "[ERRR] The installed agent version $($agent.version) cannot be upgraded to $agentVersion" -ForegroundColor Red
+  #    Write-Host "[ERRR] The script has terminated without making changes" -ForegroundColor Red
+  #    exit 0
+  #  }
+  #}
 }
 # if script makes it here, either 0 agents are installed, or the agent installed can be upgraded
 try {
@@ -292,7 +295,7 @@ try {
   Write-Host "[INFO] Please make sure to update the Host Name in Zabbix Admin Console to:" -ForegroundColor Yellow
   Write-Host "       $hostName" -ForegroundColor Yellow
   try {
-    $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' }  | Sort-Object IfIndex
+    $hostIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' } | Where-Object { $_.IPAddress -notlike '169.*' } | Sort-Object IfIndex
     Write-Host "------" -ForegroundColor Yellow
     Write-Host "[INFO] Please make sure to update the Host IP Address in Zabbix Admin Console to one of the following, please choose an IP Address that is accessible from the Zabbix Proxy $($ZabbixServer) (preferrably the primary IP address): " -ForegroundColor Yellow
     Write-Host "------" -ForegroundColor Yellow
@@ -302,7 +305,7 @@ try {
     Write-Host "------" -ForegroundColor Yellow
   }
   catch {
-    Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor DarkYellow 
+    Write-Host "[WARN] There was an error when attempting to get the local IP Addresses" -ForegroundColor DarkYellow
   }
   Write-Host "[INFO]"(Stop-Transcript) -ForegroundColor Green
 }
